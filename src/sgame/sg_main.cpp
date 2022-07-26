@@ -2468,6 +2468,7 @@ void G_RunFrame( int levelTime )
 				else if ( i < MAX_CLIENTS )
 				{
 					G_RunClient( ent );
+					G_RunThink( ent );
 					continue;
 				}
 				else
