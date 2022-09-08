@@ -2532,6 +2532,15 @@ bool G_AlienEvolve( gentity_t *ent, class_t newClass, bool report, bool dryRun )
 	vec3_t    infestOrigin;
 	class_t   currentClass = ent->client->pers.classSelection;
 
+	if ( g_gameMode.Get() == "juggernaut" && g_juggernautTeam.Get() == ent->client->pers.team )
+	{
+		if ( report )
+		{
+			//G_TriggerMenuArgs( clientNum, MN_JUGGERNAUT_NO_EVOLVE, newClass );
+		}
+		return false;
+	}
+
 	if ( newClass <= PCL_NONE || newClass >= PCL_NUM_CLASSES )
 	{
 		if ( report )
