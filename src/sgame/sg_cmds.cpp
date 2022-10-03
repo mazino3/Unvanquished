@@ -31,6 +31,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #include "shared/parse.h"
 #include "Entities.h"
 #include "CBSE.h"
+#include "sg_votes.h"
 
 #define CMD_CHEAT        0x0001
 #define CMD_CHEAT_TEAM   0x0002 // is a cheat when used on a team
@@ -1535,34 +1536,7 @@ static void Cmd_Where_f( gentity_t *ent )
 }
 
 
-// Basic vote information
-// Entries must be in the same order as for voteType_t
-enum {
-	V_TEAM, V_PUBLIC, V_ANY
-};
-enum {
-	T_NONE, T_PLAYER, T_OTHER
-};
-enum {
-	VOTE_ALWAYS, // default
-	VOTE_BEFORE, // within the first N minutes
-	VOTE_AFTER,  // not within the first N minutes
-	VOTE_REMAIN, // within N/2 minutes before SD
-	VOTE_NO_AUTO,// don't automatically vote 'yes'
-};
-static const struct {
-	const char     *name;
-	bool        stopOnIntermission;
-	int             type;
-	int             target;
-	bool        adminImmune; // from needing a reason and from being the target
-	bool        quorum;
-	qtrinary        reasonNeeded;
-	Cvar::Cvar<int> *percentage;
-	int             special;
-	Cvar::Cvar<int> *specialCvar;
-	Cvar::Cvar<bool> *reasonFlag; // where a reason requirement is configurable (reasonNeeded must be true)
-} voteInfo[] = {
+static const VoteDefinition voteInfo[] = {
 	// Name              Stop?  Type      Target     Immune  Quorum    Reason            Vote percentage var  Extra
 	{ "kick",            false, V_ANY,    T_PLAYER,  true,   true,     qtrinary::qyes,   &g_kickVotesPercent, VOTE_ALWAYS, nullptr, nullptr },
 	{ "spectate",        false, V_ANY,    T_PLAYER,  true,   true,     qtrinary::qyes,   &g_kickVotesPercent, VOTE_ALWAYS, nullptr, nullptr },
@@ -1599,7 +1573,7 @@ bool G_CheckStopVote( team_t team )
 /*
 ==================
 isDisabledVoteType
-
+reason[0] = '\0'; // nullify since we've used it here...
 Check for disabled vote types.
 Does not distinguish between public and team votes.
 ==================
@@ -1613,7 +1587,7 @@ static bool isDisabledVoteType(const char *vote)
 	return false;
 }
 
-/*
+/*reason[0] = '\0'; // nullify since we've used it here...
 Return true if arg is valid, and store the number in argnum.
 Otherwise, return false and do not modify argnum.
 */
@@ -3656,20 +3630,20 @@ void Cmd_TeamStatus_f( gentity_t * ent )
 		bool spawned;
 	} structures[ BA_NUM_BUILDABLES ] = {};
 
-	if ( g_teamStatus.Get() <= 0 ) 
+	if ( g_teamStatus.Get() <= 0 )
 	{
 		trap_SendServerCommand( ent->num(), "print \"teamstatus is disabled.\n\"" );
 		return;
 	}
 
-	if ( ent->client->pers.namelog->muted ) 
+	if ( ent->client->pers.namelog->muted )
 	{
 		trap_SendServerCommand( ent->num(), "print \"You are muted and cannot use message commands.\n\"" );
 		return;
 	}
 
 	if ( level.team[ G_Team( ent ) ].lastTeamStatus
-		&& ( level.time - level.team[ G_Team( ent ) ].lastTeamStatus ) < g_teamStatus.Get() * 1000 ) 
+		&& ( level.time - level.team[ G_Team( ent ) ].lastTeamStatus ) < g_teamStatus.Get() * 1000 )
 	{
 		trap_SendServerCommand( ent->num(), va( "print \"Your team's status may only be checked every %i seconds.\"", g_teamStatus.Get() ) );
 		return;
@@ -3678,14 +3652,14 @@ void Cmd_TeamStatus_f( gentity_t * ent )
 	level.team[ G_Team( ent ) ].lastTeamStatus = level.time;
 
 	tmp = &g_entities[ 0 ];
-	for ( int i = 0; i < level.num_entities; i++, tmp++ ) 
+	for ( int i = 0; i < level.num_entities; i++, tmp++ )
 	{
 		if ( !G_OnSameTeam( tmp, ent ) )
 		{
 			continue;
 		}
-		
-		if ( i < MAX_CLIENTS && tmp->client && tmp->entity ) 
+
+		if ( i < MAX_CLIENTS && tmp->client && tmp->entity )
 		{
 			const HealthComponent* health = tmp->entity->Get<HealthComponent>();
 			if ( tmp->client->pers.connected == CON_CONNECTED
@@ -3699,7 +3673,7 @@ void Cmd_TeamStatus_f( gentity_t * ent )
 			continue;
 		}
 
-		if ( tmp->s.eType == entityType_t::ET_BUILDABLE ) 
+		if ( tmp->s.eType == entityType_t::ET_BUILDABLE )
 		{
 			int type = tmp->s.modelindex;
 			ASSERT( type < BA_NUM_BUILDABLES );
@@ -3715,8 +3689,8 @@ void Cmd_TeamStatus_f( gentity_t * ent )
 			}
 		}
 	}
-	
-	if ( G_Team( ent ) == TEAM_ALIENS ) 
+
+	if ( G_Team( ent ) == TEAM_ALIENS )
 	{
 		G_Say( ent, SAY_TEAM,
 		      va( "^3[overmind]: %s(%d) ^3Spawns: ^5%d ^3Builders: ^5%d ^3Boosters: ^5%d ^3Leeches: ^5%d",
@@ -3724,8 +3698,8 @@ void Cmd_TeamStatus_f( gentity_t * ent )
 		    	"^5Building", structures[ BA_A_OVERMIND ].health * 100 / BG_Buildable( BA_A_OVERMIND )->health, // OM health logic part 2
 				level.team[ TEAM_ALIENS ].numSpawns, builders, // spawns, builders
 				structures[ BA_A_BOOSTER ].count, structures[ BA_A_LEECH ].count ) ); // booster, leech
-	} 
-	else 
+	}
+	else
 	{
 		G_Say( ent, SAY_TEAM,
 		      va( "^3[reactor]: %s(%d) ^3Spawns: ^5%d ^3Builders: ^5%d ^3Armouries: ^5%d ^3Medistations: ^5%d ^3Drills: ^5%d",
