@@ -22,9 +22,8 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 ===========================================================================
 */
+#include "sg_local.h"
 
-// Basic vote information
-// Entries must be in the same order as for voteType_t
 enum VoteType {
 	V_TEAM, V_PUBLIC, V_ANY
 };
@@ -52,3 +51,6 @@ struct VoteDefinition {
 	Cvar::Cvar<int> *specialCvar;
 	Cvar::Cvar<bool> *reasonFlag; // where a reason requirement is configurable (reasonNeeded must be true)
 };
+
+
+void G_HandleVote( gentity_t *ent );
