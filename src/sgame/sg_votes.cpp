@@ -663,7 +663,8 @@ void G_HandleVote( gentity_t* ent )
 
 	// look up the vote detail
 	auto it = voteInfo.find( vote );
-	if ( it == voteInfo.end() || ( team == TEAM_NONE && it->second.type == V_TEAM ) ||
+	if ( vote.empty() || it == voteInfo.end() ||
+	     ( team == TEAM_NONE && it->second.type == V_TEAM ) ||
 	     ( team != TEAM_NONE && it->second.type == V_PUBLIC ) )
 	{
 		bool added = false;
@@ -783,12 +784,20 @@ void G_HandleVote( gentity_t* ent )
 
 	if ( vi.target != T_NONE )
 	{
-		arg = args.Argv( 2 );
+		arg = args.Argc() > 2 ? args.Argv( 2 ) : "";
 	}
 
 	if ( vi.reasonNeeded != qtrinary::qno )
 	{
-		reason = args.ConcatArgs( vi.target != T_NONE ? 3 : 2 );
+		if ( vi.target != T_NONE )
+		{
+			reason = args.Argc() > 3 ? args.ConcatArgs( 3 ) : "";
+		}
+		else
+		{
+			reason = args.Argc() > 2 ? args.ConcatArgs( 2 ) : "";
+		}
+
 		reason = Color::StripColors( reason );
 	}
 
@@ -1178,6 +1187,7 @@ static std::string G_HandleVoteTemplate( Str::StringRef str, gentity_t* ent, tea
 		else
 		{
 			out += str.substr( c );
+			c = str.size();
 		}
 	}
 	Log::Notice( " -- %s", out.c_str() );
@@ -1187,6 +1197,10 @@ static std::string G_HandleVoteTemplate( Str::StringRef str, gentity_t* ent, tea
 bool G_AddCustomVote( std::string vote, VoteDefinition def, std::string voteTemplate,
                       std::string displayTemplate )
 {
+	if ( vote.empty() )
+	{
+		return false;
+	}
 	auto it = voteInfo.find( vote );
 	if ( it != voteInfo.end() )
 	{
