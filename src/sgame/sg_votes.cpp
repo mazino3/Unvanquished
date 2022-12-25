@@ -640,7 +640,8 @@ void G_HandleVote( gentity_t* ent )
 	if ( !g_allowVote.Get() )
 	{
 		trap_SendServerCommand(
-			ent->num(), va( "print_tr %s %s", QQ( N_( "$1$: voting not allowed here" ) ), cmd.c_str() ) );
+			ent->num(),
+			va( "print_tr %s %s", QQ( N_( "$1$: voting not allowed here" ) ), cmd.c_str() ) );
 		return;
 	}
 
@@ -808,8 +809,7 @@ void G_HandleVote( gentity_t* ent )
 		if ( !arg[ 0 ] )
 		{
 			trap_SendServerCommand(
-				ent->num(),
-				va( "print_tr %s %s", QQ( N_( "$1$: no target" ) ), cmd.c_str() ) );
+				ent->num(), va( "print_tr %s %s", QQ( N_( "$1$: no target" ) ), cmd.c_str() ) );
 			return;
 		}
 
@@ -858,9 +858,8 @@ void G_HandleVote( gentity_t* ent )
 		if ( team != TEAM_NONE && ent->client->pers.team != level.clients[ clientNum ].pers.team )
 		{
 			trap_SendServerCommand(
-				ent->num(),
-				va( "print_tr %s %s", QQ( N_( "$1$: player is not on your team" ) ),
-			        cmd.c_str() ) );
+				ent->num(), va( "print_tr %s %s", QQ( N_( "$1$: player is not on your team" ) ),
+			                    cmd.c_str() ) );
 			return;
 		}
 	}
@@ -1154,12 +1153,13 @@ static std::string G_HandleVoteTemplate( Str::StringRef str, gentity_t* ent, tea
                                          std::string& name, int clientNum, int id )
 {
 	std::unordered_map<std::string, std::string> params = {
-		{"team",       BG_TeamNamePlural( team )  },
-		{ "arg",       arg						},
-		{ "reason",    reason                     },
-		{ "name",      name					   },
-		{ "slot",      std::to_string( clientNum )},
-		{ "namelogId", std::to_string( id )       },
+		{"team",       BG_TeamNamePlural( team )               },
+		{ "arg",       Cmd::Escape( arg )                      },
+		{ "reason",    Cmd::Escape( reason )                   },
+		{ "name",      Cmd::Escape( name )                     },
+		{ "slot",      std::to_string( clientNum )             },
+		{ "namelogId", std::to_string( id )                    },
+		{ "caller",    Cmd::Escape( ent->client->pers.netname )},
 	};
 	std::string out;
 	out.reserve( str.size() + arg.size() + reason.size() );
