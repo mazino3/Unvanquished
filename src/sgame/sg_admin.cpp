@@ -2290,7 +2290,7 @@ bool G_admin_readconfig( gentity_t *ent )
 		if ( !G_AddCustomVote( vote.name, vote.def, vote.vote, vote.display ) )
 		{
 			Log::Warn( "Failed to register vote '%s': vote already exists", vote.name );
-		}
+ 		}
 	}
 
 	return true;
